@@ -5,10 +5,7 @@ const OwnerSchema = mongoose.Schema({
     name: String,
     Designation:String,
     owner_role:{"type":String,"enum":["CEO","Manager"]} ,
-    user_id : {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-    },
+   
 }, {
     timestamps: true
 });
