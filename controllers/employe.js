@@ -143,7 +143,7 @@ router.post("/userrating",async (req, res) => {
       const check_user = await User.find({_id: user_id});
       const check_owner = await owner.find({_id:owner_id});
 
-      if (check_user[0].length > 0 && check_owner[0].length > 0) {
+      if (check_user.length > 0 && check_owner.length > 0) {
         if (check_owner[0].owner_role === 'CEO') {
             const employee = await User.findOneAndUpdate({ _id:  user_id }, {  CEO_rating: rating })
             return res.status(200).json({ data: employee, status: 200 });
@@ -170,10 +170,44 @@ router.get("/getrating",async (req, res) => {
     
 //find approval by owner
 router.get("/getapproval",async(req,res) => {
-      const { owner_id } = req.query;
-      const populated = await User.find ({Approved_by_manager:owner_id}, {Approved_by_CEO :owner_id} ).populate({path:"owner_id"})
-    return res.status(200).json({ data: populated, status: 200 });
-    
+      const { ownerid } = req.query;
+      console.log("@@@@@@@@@ ownerid",ownerid);
+      const result = await User.find ({$or:[
+        {Approved_by_manager:ownerid},
+        {Approved_by_CEO: ownerid}
+      ]})
+    return res.status(200).json({ data: result, status: 200 });
+});
+
+//lookup
+router.get("/getratinglookup",async (req, res) => {
+  const { rating } = req.query;
+  console.log(rating)
+  try{  
+    const a =await owner.aggregate([
+      { $lookup:
+          {
+             from: "User",
+             localField: "_id",
+             foreignField: "owner_id",
+             as: "result",
+          pipeline: [
+               { $match:
+                       { $or:
+                           [
+                              { $gte: [ "$CEO_rating", rating] },
+                              { $gte: ["$Manager_rating", rating ] }
+                           ]
+                       }
+                   }     
+           ],
+           as: "result"
+           }
+    }
+   ])
+  } catch(e){
+    console.log(e)
+  }
 });
 
 module.exports = router;
